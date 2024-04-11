@@ -46,7 +46,7 @@ def ask_and_get_answer(vector_store, q, k=3):
     from langchain.chains import RetrievalQA
     from langchain_openai import ChatOpenAI
 
-    llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=1)
+    llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0)
 
     retriever = vector_store.as_retriever(search_type='similarity', search_kwargs={'k': k})
 
@@ -64,7 +64,12 @@ def calculate_embedding_cost(texts):
     # print(f'Embedding Cost in USD: {total_tokens / 1000 * 0.00002:.6f}')
     return total_tokens, total_tokens / 1000 * 0.0004
 
+# The method for clearing the history
+def history_clear():
+    if 'history'in st.session_state:
+        del st.session_state['history']
 
+# Entry method for streamlit application
 if __name__ == "__main__":
     import os
     from dotenv import load_dotenv, find_dotenv
@@ -79,9 +84,11 @@ if __name__ == "__main__":
         if api_key:
             os.environ['OPENAI_API_KEY'] = api_key
         uploaded_file = st.file_uploader('Upload a file:', type=['pdf', 'docx', 'txt'])
-        chunk_size = st.number_input('Chunk Size:', min_value=100, max_value=2048, value=512)
-        k = st.number_input('k (number of chunks passed to LLM from chunk database)', min_value=1, max_value=10, value=3)
-        add_data = st.button('Add Data')
+        chunk_size = st.number_input('Chunk Size:', min_value=100, max_value=2048, value=512, 
+                                     on_change=history_clear)
+        k = st.number_input('Top k (number of chunks found based on sementic search)', 
+                            min_value=1, max_value=10, value=3, on_change=history_clear)
+        add_data = st.button('Add Data', on_click=history_clear)
 
         # Upload block
         if uploaded_file and add_data:
@@ -111,7 +118,6 @@ if __name__ == "__main__":
     if q:
         if 'vs' in st.session_state:
             vector_store = st.session_state.vs
-            st.write(f'value of k : {k}')
 
             # now let's call the llm for answer
             answer = ask_and_get_answer(vector_store, q, k)
@@ -120,7 +126,7 @@ if __name__ == "__main__":
             # Lets start working on making the Chat history below part of your main window
             if 'history' not in st.session_state:
                 st.session_state.history = ''
-            value = f'Question: {q} \nAnswer: {answer}'
+            value = f'Question: {q} \n\nAnswer: {answer}'
             st.session_state.history = f'{value} \n {"-" * 100} \n {st.session_state.history}'
             h = st.session_state.history
             st.text_area(label='Chat History', value=h, key='history', height=400)
