@@ -1,0 +1,13 @@
+1> persistence to be enabled. The embeddings not to be generated with every session - done
+2> upload feature need not be on same page - R3.0
+3> reply is too small. control too be provided. - 
+4> one question about gavalgan, father of sanjay resulted in "I do not know" - This is usually sorted by increasing K. For UX search deeper feature to be enabled
+5> saving of history in account to be there.
+6> reference page to be added
+7> Cost/ pricing to be determined
+8> Feature to remove a wrong reference/ updated reference. No need to generate embeddings for entire document. 
+
+New Use cases
+1> Chat bot that reads from the knoledgebase and responds
+2> Exam preparation - R3.0 (needs cleaning)
+3> Law Use case   - R3.0 (needs massive inclusion to be useful. high value
