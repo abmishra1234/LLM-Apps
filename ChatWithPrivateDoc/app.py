@@ -1,9 +1,7 @@
 import streamlit as st
-from langchain_community.embeddings.openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
-
 import os
-
 
 # loading PDF, DOCX and TXT files as LangChain Documents
 def load_document(file):
@@ -36,10 +34,32 @@ def chunk_data(data, chunk_size=256, chunk_overlap=20):
     return chunks
 
 # Create Embedding
-def create_embeddings(chunks):
-    embeddings = OpenAIEmbeddings()
-    vector_store = Chroma.from_documents(chunks, embeddings)
-    return vector_store
+def create_embeddings_chroma(chunks, persist_directory='./chroma_db'):
+    from langchain.vectorstores import Chroma
+    from langchain_openai import OpenAIEmbeddings
+
+    # Instantiate an embedding model from OpenAI (smaller version for efficiency)
+    embeddings = OpenAIEmbeddings(model='text-embedding-3-small', dimensions=1536)
+
+    # Create a Chroma vector store using the provided text chunks and embedding model,
+    # configuring it to save data to the specified directory
+    vector_store = Chroma.from_documents(chunks, embeddings, persist_directory=persist_directory)
+
+    return vector_store  # Return the created vector store
+
+# Load Embedding from the chroma_db disk location
+def load_embeddings_chroma(persist_directory='./chroma_db'):
+    from langchain.vectorstores import Chroma
+    from langchain_openai import OpenAIEmbeddings
+
+    # Instantiate the same embedding model used during creation
+    embeddings = OpenAIEmbeddings(model='text-embedding-3-small', dimensions=1536)
+
+    # Load a Chroma vector store from the specified directory, using the provided embedding function
+    vector_store = Chroma(persist_directory=persist_directory, embedding_function=embeddings)
+
+    return vector_store  # Return the loaded vector store
+
 
 # Asking and Getting Answer
 def ask_and_get_answer(vector_store, q, k=3):
@@ -62,7 +82,7 @@ def calculate_embedding_cost(texts):
     total_tokens = sum([len(enc.encode(page.page_content)) for page in texts])
     # print(f'Total Tokens: {total_tokens}')
     # print(f'Embedding Cost in USD: {total_tokens / 1000 * 0.00002:.6f}')
-    return total_tokens, total_tokens / 1000 * 0.0004
+    return total_tokens, total_tokens / 1000 * 0.00002
 
 # The method for clearing the history
 def history_clear():
@@ -89,6 +109,7 @@ if __name__ == "__main__":
         k = st.number_input('Top k (number of chunks found based on sementic search)', 
                             min_value=1, max_value=10, value=3, on_change=history_clear)
         add_data = st.button('Add Data', on_click=history_clear)
+        upload_embedding = st.button('Upload the Existing Embedding')
 
         # Upload block
         if uploaded_file and add_data:
@@ -107,11 +128,17 @@ if __name__ == "__main__":
                 tokens, embedding_cost = calculate_embedding_cost(chunks)
                 st.write(f'Embedding Cost: ${embedding_cost:.4f}')
 
-                vector_store = create_embeddings(chunks)
+                vector_store = create_embeddings_chroma(chunks)
                 # now save this vector_store into user's session
                 st.session_state.vs = vector_store
 
                 st.success('File uploaded, chunked and embedded successfully!')
+        if upload_embedding:
+            with st.spinner('Loading of embedding in progress...'):
+                vector_store = load_embeddings_chroma()
+                # now save this vector_store into user's session
+                st.session_state.vs = vector_store
+                st.success('Loading of embedding Completed!')
 
     # Let's start main part of your RAG Application
     q = st.text_input('Ask any question about the content of your file:')
@@ -132,8 +159,3 @@ if __name__ == "__main__":
             st.text_area(label='Chat History', value=h, key='history', height=400)
 
     # End of Application Logic for now...
-
-
-
-
-
