@@ -103,8 +103,6 @@ def save_chat_history(chat_history):
     with open("chat_history.txt", "w") as file:
         file.write(chat_history)
 
-
-
 # Entry method for streamlit application
 if __name__ == "__main__":
     import os
@@ -124,8 +122,6 @@ if __name__ == "__main__":
                                      on_change=history_clear)
         k = st.number_input('Top k (number of chunks found based on sementic search)', 
                             min_value=1, max_value=10, value=3, on_change=history_clear)
-        # add_data = st.button('Add Data', on_click=history_clear)
-        # upload_embedding = st.button('Upload the Existing Embedding')
 
         # Create two columns
         col_add_data, col_upload_embedding = st.columns(2)
@@ -186,19 +182,17 @@ if __name__ == "__main__":
         value = f'Question:\n{q} \n\nAnswer:\n{answer}'
         st.session_state.history = f'{value} \n {"-" * 100} \n {st.session_state.history}'
         h = st.session_state.history
-        # st.button('Load History')
-        # st.button('Save History', on_click=save_chat_history(h))
 
         # Create two columns
-        col1, col2 = st.columns(2)
+        col_load_history, col_save_history = st.columns(2)
 
         # Place a button in each column
-        with col1:
+        with col_load_history:
             if st.button('Load History'):
                 # Code to load history
                 st.write('History loaded!')
 
-        with col2:
+        with col_save_history:
             if st.button('Save History', on_click=save_chat_history(st.session_state.history)):
                 # Code to save history
                 st.write('History saved!')
