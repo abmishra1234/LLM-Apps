@@ -60,7 +60,15 @@ def load_embeddings_chroma(persist_directory='./chroma_db'):
 
     return vector_store  # Return the loaded vector store
 
+'''
+The API cost for the GPT-3.5-turbo model is detailed as follows:
 
+For inputs, the cost is $0.50 per 1 million tokens.
+For outputs, the cost is $1.50 per 1 million tokens[1].
+Additionally, another source specifies a different usage rate of $0.002 per 1,000 tokens, 
+which might reflect a simplified or different pricing model[2].
+
+'''
 # Asking and Getting Answer
 def ask_and_get_answer(vector_store, q, k=3):
     from langchain.chains import RetrievalQA
@@ -75,13 +83,19 @@ def ask_and_get_answer(vector_store, q, k=3):
     answer = chain.invoke(q)
     return answer['result'] # return only answer and not query
 
+'''
+The cost for using OpenAI's text-embedding-3-small model is $0.00002 per 1,000 tokens[3]. 
+This pricing makes it a highly economical choice for embedding tasks, especially 
+when compared to other models in the same category, such as text-embedding-ada-002. 
+According to a Twitter source, text-embedding-3-small is 20% the cost of 
+text-embedding-ada-002 and offers slightly better performance in retrieval tasks, 
+despite having fewer dimensions[6].
+'''
 # Calculate the Cost
 def calculate_embedding_cost(texts):
     import tiktoken
     enc = tiktoken.encoding_for_model('text-embedding-3-small')
     total_tokens = sum([len(enc.encode(page.page_content)) for page in texts])
-    # print(f'Total Tokens: {total_tokens}')
-    # print(f'Embedding Cost in USD: {total_tokens / 1000 * 0.00002:.6f}')
     return total_tokens, total_tokens / 1000 * 0.00002
 
 # The method for clearing the history
@@ -132,7 +146,6 @@ if __name__ == "__main__":
 
         with col_upload_embedding:
             upload_embedding = st.button('Upload the Existing Embedding')
-
 
         # Upload block
         if uploaded_file and add_data:
