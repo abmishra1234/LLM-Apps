@@ -60,20 +60,18 @@ def load_embeddings_chroma(persist_directory='./chroma_db'):
 
     return vector_store  # Return the loaded vector store
 
-'''
-The API cost for the GPT-3.5-turbo model is detailed as follows:
-
-For inputs, the cost is $0.50 per 1 million tokens.
-For outputs, the cost is $1.50 per 1 million tokens[1].
-Additionally, another source specifies a different usage rate of $0.002 per 1,000 tokens, 
-which might reflect a simplified or different pricing model[2].
-
-'''
 # Asking and Getting Answer
 def ask_and_get_answer(vector_store, q, k=3):
     from langchain.chains import RetrievalQA
     from langchain_openai import ChatOpenAI
 
+    # Let's integerate the Prompt template here for your response refinement
+    # TBD - 18042024 - Task 01 - Integerate Prompt template
+    # TBD - 18042024 - How you will implement response in user preferred language
+    #  update your UI and selected language. Please note default language must be selected
+    # English, until other language is not supported
+    # This will help you to achieve multi language support in response
+    
     llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0)
 
     retriever = vector_store.as_retriever(search_type='similarity', search_kwargs={'k': k})
@@ -83,14 +81,6 @@ def ask_and_get_answer(vector_store, q, k=3):
     answer = chain.invoke(q)
     return answer['result'] # return only answer and not query
 
-'''
-The cost for using OpenAI's text-embedding-3-small model is $0.00002 per 1,000 tokens[3]. 
-This pricing makes it a highly economical choice for embedding tasks, especially 
-when compared to other models in the same category, such as text-embedding-ada-002. 
-According to a Twitter source, text-embedding-3-small is 20% the cost of 
-text-embedding-ada-002 and offers slightly better performance in retrieval tasks, 
-despite having fewer dimensions[6].
-'''
 # Calculate the Cost
 def calculate_embedding_cost(texts):
     import tiktoken
@@ -169,6 +159,8 @@ if __name__ == "__main__":
                 st.session_state.vs = vector_store
 
                 st.success('File uploaded, chunked and embedded successfully!')
+        
+        # Case when you don't want to chunk and embed to the same document again 
         if upload_embedding:
             with st.spinner('Loading of embedding in progress...'):
                 vector_store = load_embeddings_chroma()
