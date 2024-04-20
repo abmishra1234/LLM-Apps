@@ -2,6 +2,7 @@ import streamlit as st
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 import os
+# for handling the Logging in project
 import logging
 
 
@@ -76,7 +77,7 @@ def load_embeddings_chroma(persist_directory='./chroma_db'):
 def ask_and_get_answer(vector_store, q, k=3):
     from langchain.chains import RetrievalQA
     from langchain_openai import ChatOpenAI
-    logging.info(f'The method ask_and_get_answer called with query: {q}')
+    logging.info(f'The method ask_and_get_answer called with query: {q}, and the value of k= {k}')
     # Let's integerate the Prompt template here for your response refinement
     # TBD - 18042024 - Task 01 - Integerate Prompt template
     # TBD - 18042024 - How you will implement response in user preferred language
@@ -192,19 +193,11 @@ def build_side_panel(st):
                 st.success('Loading of embedding Completed!')
         logging.info('build_side_panel method is Successfully completed !!!')
 
-# Entry method for streamlit application
-if __name__ == "__main__":
-    import os
-    from dotenv import load_dotenv, find_dotenv
-    logging.info('__main__ method is called!!!')
-    load_dotenv(find_dotenv(), override=True)
-
-    banner_img = 'Private-Docs-Assistent.png'
+def build_main_window(st):
+    banner_img = 'banner.png'
     st.image(banner_img)
     logging.info(f'Adding the background image = {banner_img}')
     st.subheader('GenAI LLM Powered Assistant of your private document 🤖')
-    
-    build_side_panel(st)
 
     # Let's start main part of your RAG Application
     q = st.text_input('Ask any question about the content of your file:')
@@ -240,4 +233,18 @@ if __name__ == "__main__":
             st.write('History saved!')
 
     st.text_area(label='Chat History', value=st.session_state.history, key='history', height=400)
+
+def main():
+    import os
+    from dotenv import load_dotenv, find_dotenv
+    logging.info('__main__ method is called!!!')
+    load_dotenv(find_dotenv(), override=True)
+
+    build_side_panel(st)
+    build_main_window(st)
+
     # End of Application Logic for now...
+
+# Entry method for streamlit application
+if __name__ == "__main__":
+    main()
