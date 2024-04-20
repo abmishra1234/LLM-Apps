@@ -2,41 +2,52 @@ import streamlit as st
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 import os
+import logging
+
+
+# Configure logging
+logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # loading PDF, DOCX and TXT files as LangChain Documents
 def load_document(file):
     import os
+    logging.info(f'Attempting to load document: {file}')
     name, extension = os.path.splitext(file)
 
     if extension == '.pdf':
         from langchain.document_loaders import PyPDFLoader
-        print(f'Loading {file}')
+        logging.info(f'Loading {file}')
         loader = PyPDFLoader(file)
     elif extension == '.docx':
         from langchain.document_loaders import Docx2txtLoader
-        print(f'Loading {file}')
+        logging.info(f'Loading {file}')
         loader = Docx2txtLoader(file)
     elif extension == '.txt':
         from langchain.document_loaders import TextLoader
         loader = TextLoader(file)
     else:
-        print('Document format is not supported!')
+        logging.info('Document format is not supported!')
         return None
 
     data = loader.load()
+    logging.info('Document loaded successfully.')    
     return data
 
 # Chunking Data
 def chunk_data(data, chunk_size=256, chunk_overlap=20):
+    logging.info(f'chunk_size: {chunk_size}, chunk_overlap: {chunk_overlap}')
     from langchain.text_splitter import RecursiveCharacterTextSplitter
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     chunks = text_splitter.split_documents(data)
+    logging.info(f'chunk_data method complete successfully!!!')
     return chunks
 
 # Create Embedding
 def create_embeddings_chroma(chunks, persist_directory='./chroma_db'):
     from langchain.vectorstores import Chroma
     from langchain_openai import OpenAIEmbeddings
+
+    logging.info(f'create_embeddings_chroma method called with persist_directory=: {persist_directory}')
 
     # Instantiate an embedding model from OpenAI (smaller version for efficiency)
     embeddings = OpenAIEmbeddings(model='text-embedding-3-small', dimensions=1536)
@@ -45,6 +56,7 @@ def create_embeddings_chroma(chunks, persist_directory='./chroma_db'):
     # configuring it to save data to the specified directory
     vector_store = Chroma.from_documents(chunks, embeddings, persist_directory=persist_directory)
 
+    logging.info(f'create_embeddings_chroma method completed successfully!!!')
     return vector_store  # Return the created vector store
 
 # Load Embedding from the chroma_db disk location
@@ -64,7 +76,7 @@ def load_embeddings_chroma(persist_directory='./chroma_db'):
 def ask_and_get_answer(vector_store, q, k=3):
     from langchain.chains import RetrievalQA
     from langchain_openai import ChatOpenAI
-
+    logging.info(f'The method ask_and_get_answer called with query: {q}')
     # Let's integerate the Prompt template here for your response refinement
     # TBD - 18042024 - Task 01 - Integerate Prompt template
     # TBD - 18042024 - How you will implement response in user preferred language
@@ -79,6 +91,7 @@ def ask_and_get_answer(vector_store, q, k=3):
     chain = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever)
 
     answer = chain.invoke(q)
+    logging.info(f'The method ask_and_get_answer completed successfully!!!')
     return answer['result'] # return only answer and not query
 
 # Calculate the Cost
@@ -86,36 +99,46 @@ def calculate_embedding_cost(texts):
     import tiktoken
     enc = tiktoken.encoding_for_model('text-embedding-3-small')
     total_tokens = sum([len(enc.encode(page.page_content)) for page in texts])
+    logging.info(f'The cost of embedding is {total_tokens / 1000 * 0.00002}, and the model used text-embedding-3-small')
     return total_tokens, total_tokens / 1000 * 0.00002
 
 # The method for clearing the history
 def history_clear():
     if 'history'in st.session_state:
         del st.session_state['history']
+    logging.info('history cleaning completed successfully!!!')
 
 # Load existing chat history from a file
 def load_chat_history():
+    logging.info('reading of chat_history.txt initiated!!!')
     try:
         with open("chat_history.txt", "r") as file:
             chat_history = file.read()
     except FileNotFoundError:
+        logging.info('chat_history.txt file not found')
         chat_history = ""
     return chat_history
 
 # Save chat history to a file
 def save_chat_history(chat_history):
+    logging.info(f'Called save_chat_history with {chat_history}')
     with open("chat_history.txt", "w") as file:
         file.write(chat_history)
 
-# Entry method for streamlit application
-if __name__ == "__main__":
-    import os
-    from dotenv import load_dotenv, find_dotenv
-    load_dotenv(find_dotenv(), override=True)
+# Define a function to handle loading history into session state
+def handle_load_history():
+    logging.info('handle_load_history called!!!')
+    st.session_state.history = load_chat_history()
+    st.rerun()
 
-    st.image('banner.png')
-    st.subheader('GenAI LLM Powered Assistant of your private document 🤖')
-    
+def build_side_panel(st):
+    '''
+    This code block is used for prepairing the side block panel 
+    which is hidden for most of the use except admin
+    As of now , it is viible to everyone but later it will be done according to
+    the concept we thought.
+    '''
+    logging.info('build_side_panel method is called !!!')
     with st.sidebar:
         st.subheader('Document Upload Panel')
         api_key = st.text_input('OpenAI API Key:', type='password')
@@ -123,7 +146,7 @@ if __name__ == "__main__":
             os.environ['OPENAI_API_KEY'] = api_key
         uploaded_file = st.file_uploader('Upload a file:', type=['pdf', 'docx', 'txt'])
         chunk_size = st.number_input('Chunk Size:', min_value=100, max_value=2048, value=512, 
-                                     on_change=history_clear)
+                                        on_change=history_clear)
         k = st.number_input('Top k (number of chunks found based on sementic search)', 
                             min_value=1, max_value=10, value=3, on_change=history_clear)
 
@@ -167,6 +190,21 @@ if __name__ == "__main__":
                 # now save this vector_store into user's session
                 st.session_state.vs = vector_store
                 st.success('Loading of embedding Completed!')
+        logging.info('build_side_panel method is Successfully completed !!!')
+
+# Entry method for streamlit application
+if __name__ == "__main__":
+    import os
+    from dotenv import load_dotenv, find_dotenv
+    logging.info('__main__ method is called!!!')
+    load_dotenv(find_dotenv(), override=True)
+
+    banner_img = 'Private-Docs-Assistent.png'
+    st.image(banner_img)
+    logging.info(f'Adding the background image = {banner_img}')
+    st.subheader('GenAI LLM Powered Assistant of your private document 🤖')
+    
+    build_side_panel(st)
 
     # Let's start main part of your RAG Application
     q = st.text_input('Ask any question about the content of your file:')
@@ -176,7 +214,7 @@ if __name__ == "__main__":
             vector_store = st.session_state.vs
 
             # now let's call the llm for answer
-            answer = ask_and_get_answer(vector_store, q, k)
+            answer = ask_and_get_answer(vector_store, q)
             st.text_area('Assistant Answer: ', value=answer)
 
     st.divider()
@@ -188,19 +226,18 @@ if __name__ == "__main__":
         st.session_state.history = f'{value} \n {"-" * 100} \n {st.session_state.history}'
         h = st.session_state.history
 
-        # Create two columns
-        col_load_history, col_save_history = st.columns(2)
+    # Create two columns
+    col_load_history, col_save_history = st.columns(2)
 
-        # Place a button in each column
-        with col_load_history:
-            if st.button('Load History'):
-                # Code to load history
-                st.write('History loaded!')
+    # Place a button in each column
+    with col_load_history:
+        if st.button('Load History'):
+            handle_load_history()            
 
-        with col_save_history:
-            if st.button('Save History', on_click=save_chat_history(st.session_state.history)):
-                # Code to save history
-                st.write('History saved!')
+    with col_save_history:
+        if st.button('Save History', on_click=save_chat_history(st.session_state.history)):
+            # Code to save history
+            st.write('History saved!')
 
-        st.text_area(label='Chat History', value=h, key='history', height=400)
+    st.text_area(label='Chat History', value=st.session_state.history, key='history', height=400)
     # End of Application Logic for now...
