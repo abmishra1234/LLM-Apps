@@ -78,20 +78,17 @@ def ask_and_get_answer(vector_store, q, k=3):
     from langchain.chains import RetrievalQA
     from langchain_openai import ChatOpenAI
     logging.info(f'The method ask_and_get_answer called with query: {q}, and the value of k= {k}')
-    # Let's integerate the Prompt template here for your response refinement
-    # TBD - 18042024 - Task 01 - Integerate Prompt template
-    # TBD - 18042024 - How you will implement response in user preferred language
-    #  update your UI and selected language. Please note default language must be selected
-    # English, until other language is not supported
-    # This will help you to achieve multi language support in response
-    
+   
     llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0)
 
     retriever = vector_store.as_retriever(search_type='similarity', search_kwargs={'k': k})
 
     chain = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever)
 
-    answer = chain.invoke(q)
+    template = f'{q}.Please providing a concise and clear answer,explain the reasoning, \
+                and share source as document name and page number'
+
+    answer = chain.invoke(template)
     logging.info(f'The method ask_and_get_answer completed successfully!!!')
     return answer['result'] # return only answer and not query
 
@@ -248,3 +245,4 @@ def main():
 # Entry method for streamlit application
 if __name__ == "__main__":
     main()
+
