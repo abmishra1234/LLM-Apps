@@ -38,3 +38,7 @@ who married the daughter of shukracharya?
 Answer:
 I don't know the answer to that question. 
  ************************************************************************
+
+21-April-2024
+Did some testing and working fine except few out of the document reference.
+Sometime K need to be adjusted higher side to get the right context to answer it properly.
