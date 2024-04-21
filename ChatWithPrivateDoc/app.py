@@ -65,14 +65,18 @@ def load_embeddings_chroma(persist_directory='./chroma_db'):
 def ask_and_get_answer(vector_store, q, k=3):
     from langchain.chains import RetrievalQA
     from langchain_openai import ChatOpenAI
-
+   
     llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0)
 
     retriever = vector_store.as_retriever(search_type='similarity', search_kwargs={'k': k})
 
     chain = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever)
 
-    answer = chain.invoke(q)
+    template = f'{q}.Answer the following question based only on the provided context.\
+        Please providing a concise and clear answer,explain the reasoning, \
+        and share source as document name and page number'
+
+    answer = chain.invoke(template)
     return answer['result'] # return only answer and not query
 
 # Calculate the Cost
@@ -80,8 +84,6 @@ def calculate_embedding_cost(texts):
     import tiktoken
     enc = tiktoken.encoding_for_model('text-embedding-3-small')
     total_tokens = sum([len(enc.encode(page.page_content)) for page in texts])
-    # print(f'Total Tokens: {total_tokens}')
-    # print(f'Embedding Cost in USD: {total_tokens / 1000 * 0.00002:.6f}')
     return total_tokens, total_tokens / 1000 * 0.00002
 
 # The method for clearing the history
@@ -89,8 +91,7 @@ def history_clear():
     if 'history'in st.session_state:
         del st.session_state['history']
 
-# Entry method for streamlit application
-if __name__ == "__main__":
+def main():
     import os
     from dotenv import load_dotenv, find_dotenv
     load_dotenv(find_dotenv(), override=True)
@@ -158,4 +159,8 @@ if __name__ == "__main__":
             h = st.session_state.history
             st.text_area(label='Chat History', value=h, key='history', height=400)
 
-    # End of Application Logic for now...
+    # End of Application Logic for now...    
+
+# Entry method for streamlit application
+if __name__ == "__main__":
+    main()
